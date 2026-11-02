@@ -1,0 +1,32 @@
+import time
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
+from Crypto.Random import get_random_bytes
+
+for size in [1024, 2048, 3072]:
+
+    start = time.time()
+    key = RSA.generate(size)
+    key_time = time.time() - start
+
+    public_key = key.publickey()
+
+    message = get_random_bytes(8)
+
+    # Encryption
+    cipher = PKCS1_OAEP.new(public_key)
+    start = time.time()
+    encrypted = cipher.encrypt(message)
+    enc_time = time.time() - start
+
+    # Decryption
+    cipher = PKCS1_OAEP.new(key)
+    start = time.time()
+    decrypted = cipher.decrypt(encrypted)
+    dec_time = time.time() - start
+
+    print("\nRSA Key Size:", size)
+    print("Key Generation Time:", key_time)
+    print("Encryption Time:", enc_time)
+    print("Decryption Time:", dec_time)
+    print("Status:", "Pass" if message == decrypted else "Fail")
