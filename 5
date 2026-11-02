@@ -1,0 +1,56 @@
+def public_key(g, private, p):
+    return pow(g, private, p)
+
+def shared_secret(public, private, p):
+    return pow(public, private, p)
+
+p = 23
+g = 5
+a = 6
+b = 15
+
+A = public_key(g, a, p)
+B = public_key(g, b, p)
+
+alice = shared_secret(B, a, p)
+bob = shared_secret(A, b, p)
+
+print("Alice Private Key = ", a)
+print("Alice Public Key = ", A)
+print("Bob Private Key = ", b)
+print("Bob Public Key = ", B)
+print("Alice Shared Secret Key = ", alice)
+print("Bob Shared Secret Key = ", bob)
+
+if alice == bob:
+    print("Key Exchange : Success")
+
+# MITM Attack
+
+e1 = 7
+e2 = 10
+
+E1 = public_key(g, e1, p)
+E2 = public_key(g, e2, p)
+
+alice_secret = shared_secret(E1, a, p)
+eve_alice = shared_secret(A, e1, p)
+
+bob_secret = shared_secret(E2, b, p)
+eve_bob = shared_secret(B, e2, p)
+
+print("Alice Private Key = ", a)
+print("Alice Public Key = ", A)
+print("Bob Private Key = ", b)
+print("Bob Public Key = ", B)
+print("Eve Private Key with Alice = ", e1)
+print("Eve Public Key sent to Alice = ", E1)
+print("Eve Private Key with Bob = ", e2)
+print("Eve Public Key sent to Bob = ", E2)
+print("Alice Shared Secret Key = ", alice_secret)
+print("Eve Shared Secret Key with Alice = ", eve_alice)
+print("Bob Shared Secret Key = ", bob_secret)
+print("Eve Shared Secret Key with Bob = ", eve_bob)
+
+if alice_secret == eve_alice and bob_secret == eve_bob:
+    print("MITM Attack : Successful")
