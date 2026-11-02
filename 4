@@ -1,0 +1,48 @@
+def rotate_left(x):
+    return ((x << 3) | (x >> 5)) & 255
+
+def rotate_right(x):
+    return ((x >> 3) | (x << 5)) & 255
+
+def next_key(key):
+    return (key * 7 + 13) % 256
+
+def encrypt(text, key):
+    cipher = ""
+
+    for ch in text:
+        x = (ord(ch) + key) % 256
+        x = rotate_left(x)
+        x = x ^ key
+        cipher += format(x, '02x')
+        key = next_key(key)
+
+    return cipher
+
+def decrypt(cipher, key):
+    text = ""
+
+    for i in range(0, len(cipher), 2):
+        x = int(cipher[i:i+2], 16)
+        x = x ^ key
+        x = rotate_right(x)
+        x = (x - key) % 256
+        text += chr(x)
+        key = next_key(key)
+
+    return text
+
+# Main program
+msg = input("Enter plaintext: ")
+key = int(input("Enter key (1-255): "))
+
+cipher = encrypt(msg, key)
+print("Cipher Text:", cipher)
+
+original = decrypt(cipher, key)
+print("Decrypted Text:", original)
+
+if msg == original:
+    print("Matched")
+else:
+    print("Not Matched")
