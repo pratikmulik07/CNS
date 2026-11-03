@@ -1,0 +1,86 @@
+Sender Program
+import os
+from pathlib import Path
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+# Input and output files
+IMAGE_FILE = Path("original.jpg")
+KEY_FILE = Path("secret.key")
+ENCRYPTED_FILE = Path("encrypted_image.bin")
+
+if not IMAGE_FILE.exists():
+    raise FileNotFoundError(
+        "Place original.jpg in the project folder."
+    )
+
+# Generate a 256-bit AES key on the first run.
+# The same key must be shared securely with the receiver.
+if not KEY_FILE.exists():
+    key = AESGCM.generate_key(bit_length=256)
+    KEY_FILE.write_bytes(key)
+else:
+    key = KEY_FILE.read_bytes()
+
+if len(key) != 32:
+    raise ValueError("The AES-256 key must be 32 bytes.")
+
+# Read the original image
+image_data = IMAGE_FILE.read_bytes()
+
+# Encrypt the image using AES-GCM
+aesgcm = AESGCM(key)
+nonce = os.urandom(12)
+ciphertext = aesgcm.encrypt(nonce, image_data, None)
+# Store nonce followed by ciphertext and authentication tag
+ENCRYPTED_FILE.write_bytes(nonce + ciphertext)
+
+print("Sender: Image encrypted successfully.")
+print(f"Original image size: {len(image_data)} bytes")
+print(f"Encrypted file size: {ENCRYPTED_FILE.stat().st_size} bytes")
+print(f"Encrypted file: {ENCRYPTED_FILE}")
+print("Encryption: AES-256-GCM")
+print("Authentication tag included in encrypted data.")
+
+Receiver Program
+from pathlib import Path
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+KEY_FILE = Path("secret.key")
+ENCRYPTED_FILE = Path("encrypted_image.bin")
+OUTPUT_FILE = Path("received_image.jpg")
+
+if not KEY_FILE.exists():
+    raise FileNotFoundError("Shared secret key is missing.")
+
+if not ENCRYPTED_FILE.exists():
+    raise FileNotFoundError(
+        "Encrypted image is missing. Run sender.py first."
+    )
+key = KEY_FILE.read_bytes()
+encrypted_data = ENCRYPTED_FILE.read_bytes()
+
+if len(key) != 32:
+    raise ValueError("Invalid AES-256 key.")
+
+# First 12 bytes are the nonce.
+# Remaining bytes contain ciphertext and the GCM tag.
+if len(encrypted_data) < 12 + 16:
+    raise ValueError("Encrypted file is too short.")
+
+nonce = encrypted_data[:12]
+ciphertext = encrypted_data[12:]
+
+aesgcm = AESGCM(key)
+try:
+    # Authentication is verified before plaintext is returned.
+    image_data = aesgcm.decrypt(nonce, ciphertext, None)
+except Exception:
+    print("Authentication failed! Image may be modified.")
+    raise SystemExit(1)
+
+OUTPUT_FILE.write_bytes(image_data)
+print("Receiver: Authentication successful.")
+print("Image decrypted successfully.")
+print(f"Recovered image: {OUTPUT_FILE}")
+print(f"Recovered image size: {len(image_data)} bytes")
+
